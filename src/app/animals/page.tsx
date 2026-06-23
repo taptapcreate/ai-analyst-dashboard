@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
 import { ImageUploader } from "@/components/ImageUploader";
-import { MetricCard } from "@/components/MetricCard";
 
-export default function HumansPage() {
-  const [age, setAge] = useState<number>(25);
-  const [weight, setWeight] = useState<number>(70.0);
-  const [height, setHeight] = useState<number>(170);
-  const [goal, setGoal] = useState<string>("Lose Weight");
+export default function AnimalsPage() {
+  const [animalType, setAnimalType] = useState<string>("Dog");
+  const [breed, setBreed] = useState<string>("Unknown");
+  const [age, setAge] = useState<number>(2.0);
+  const [weight, setWeight] = useState<number>(10.0);
+  const [goal, setGoal] = useState<string>("Healthy Growth");
   const [image, setImage] = useState<string | null>(null);
   
   const [isEstimating, setIsEstimating] = useState(false);
@@ -17,12 +17,14 @@ export default function HumansPage() {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const bmi = weight / Math.pow(height / 100, 2);
-  
-  let bmiCategory = "Normal";
-  if (bmi < 18.5) bmiCategory = "Underweight";
-  else if (bmi >= 25 && bmi < 30) bmiCategory = "Overweight";
-  else if (bmi >= 30) bmiCategory = "Obese";
+  const animalTypes = ["Dog", "Cat", "Cattle", "Horse", "Sheep/Goat", "Others"];
+  const healthGoals = [
+    "Healthy Growth", 
+    "Weight Management", 
+    "Energy/Performance", 
+    "Recovery/Supplementation",
+    "Daily Maintenance"
+  ];
 
   const handleImageUpload = async (base64: string) => {
     setImage(base64);
@@ -31,22 +33,20 @@ export default function HumansPage() {
     setAnalysisResult(null);
 
     try {
-      const res = await fetch("/api/humans/estimate", {
+      const res = await fetch("/api/animals/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64 }),
+        body: JSON.stringify({ image: base64, animalType }),
       });
       const data = await res.json();
       
       if (data.error) {
         setError(data.error);
       } else {
-        if (data.age) setAge(data.age);
-        if (data.weight) setWeight(data.weight);
-        if (data.height) setHeight(data.height);
+        if (data.breed) setBreed(data.breed);
       }
     } catch (err: any) {
-      setError("Failed to estimate metrics. " + err.message);
+      setError("Failed to identify breed. " + err.message);
     } finally {
       setIsEstimating(false);
     }
@@ -60,12 +60,12 @@ export default function HumansPage() {
     setAnalysisResult(null);
 
     try {
-      const res = await fetch("/api/humans/analyze", {
+      const res = await fetch("/api/animals/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image,
-          profile: { age, weight, height, bmi, goal }
+          profile: { type: animalType, breed, age, weight, goal }
         }),
       });
       const data = await res.json();
@@ -85,23 +85,40 @@ export default function HumansPage() {
   return (
     <main className="container animate-fade-in">
       <div className="text-center mb-8">
-        <h1>🥗 Humans: AI Health Analyst</h1>
-        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Ignite your fitness journey with AI-powered insights.</p>
+        <h1>🐾 AnimalFit: AI Pet & Cattle Health Analyst</h1>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Optimize your animal's health with AI-powered diet and routine plans.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         {/* Left Column: Input Form */}
         <GlassCard>
-          <h2>👤 Your Profile</h2>
+          <h2>🐾 Animal Profile</h2>
           
           <div className="form-group">
-            <label className="form-label">Age</label>
+            <label className="form-label">Animal Type</label>
+            <select className="form-select" value={animalType} onChange={e => setAnimalType(e.target.value)}>
+              {animalTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Breed / Variety</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              value={breed} 
+              onChange={e => setBreed(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Age (Years/Months)</label>
             <input 
               type="number" 
               className="form-input" 
               value={age} 
               onChange={e => setAge(Number(e.target.value))} 
-              min={10} max={100}
+              step="0.1" min={0.1} max={50.0}
             />
           </div>
 
@@ -112,54 +129,39 @@ export default function HumansPage() {
               className="form-input" 
               value={weight} 
               onChange={e => setWeight(Number(e.target.value))} 
-              step="0.1" min={30} max={200}
+              step="0.1" min={0.1} max={2000.0}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Height (cm)</label>
-            <input 
-              type="number" 
-              className="form-input" 
-              value={height} 
-              onChange={e => setHeight(Number(e.target.value))} 
-              min={100} max={250}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Your Goal</label>
+            <label className="form-label">Health Goal</label>
             <select className="form-select" value={goal} onChange={e => setGoal(e.target.value)}>
-              <option>Lose Weight</option>
-              <option>Gain Muscle</option>
-              <option>Maintenance</option>
-              <option>Get Toned</option>
+              {healthGoals.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
 
-          <div className="flex gap-4 mt-8">
-            <MetricCard label="Your BMI" value={bmi.toFixed(1)} highlight={true} />
-            <MetricCard label="Category" value={bmiCategory} />
+          <div className="mt-8 p-4 text-center" style={{ background: 'rgba(255,255,255,0.4)', borderRadius: '12px', fontWeight: 600 }}>
+            Analyzing {animalType} - {breed}
           </div>
         </GlassCard>
 
         {/* Right Column: AI Analysis */}
         <div className="flex" style={{ flexDirection: 'column', gap: '2rem' }}>
           <GlassCard>
-            <h3>📸 Step 1: Upload Profile</h3>
-            <ImageUploader onImageUpload={handleImageUpload} label="Upload a full-body photo" />
-            {isEstimating && <p className="mt-8 text-center" style={{ color: 'var(--primary)', fontWeight: 600 }}>🔍 Estimating metrics...</p>}
+            <h3>📸 Step 1: Upload {animalType} Photo</h3>
+            <ImageUploader onImageUpload={handleImageUpload} label={`Upload photo of your ${animalType}`} />
+            {isEstimating && <p className="mt-8 text-center" style={{ color: 'var(--primary)', fontWeight: 600 }}>🔍 Identifying breed...</p>}
           </GlassCard>
 
           <GlassCard>
-            <h3>🧠 Step 2: AI Analysis</h3>
+            <h3>🧠 Step 2: AI Health Analysis</h3>
             {image ? (
               <button 
                 className="btn-primary mt-8" 
                 onClick={handleAnalyze} 
                 disabled={isAnalyzing || isEstimating}
               >
-                {isAnalyzing ? "🚀 Analyzing..." : "Generate My FitPlan"}
+                {isAnalyzing ? `🚀 Analyzing ${animalType}...` : `Generate ${animalType} HealthPlan`}
               </button>
             ) : (
               <p className="mt-8 text-center" style={{ color: 'var(--text-muted)' }}>Upload photo to start.</p>
