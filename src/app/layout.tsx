@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "AI Health Analyst",
-  description: "AI-powered health and fitness insights",
+  title: "AI Analyst Dashboard — Intelligent Insights for Animals, Humans & More",
+  description: "A premium AI-powered analyst dashboard delivering health, fitness, and structural insights through advanced vision models.",
 };
 
 export default function RootLayout({
@@ -14,18 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <nav className="nav-header">
-          <Link href="/" className="nav-logo">
-            🥗 AI Analyst
-          </Link>
-          <div className="nav-links">
-            <Link href="/" className="nav-link">Humans</Link>
-            <Link href="/animals" className="nav-link">Animals</Link>
-          </div>
-        </nav>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,187 +1,137 @@
 "use client";
 
-import { useState } from "react";
-import { GlassCard } from "@/components/GlassCard";
-import { ImageUploader } from "@/components/ImageUploader";
-import { MetricCard } from "@/components/MetricCard";
+import { useState, useCallback } from "react";
+import { AnimalsPanel } from "@/components/AnimalsPanel";
+import { HumansPanel } from "@/components/HumansPanel";
+import { BuildingsPanel } from "@/components/BuildingsPanel";
 
-export default function HumansPage() {
-  const [age, setAge] = useState<number>(25);
-  const [weight, setWeight] = useState<number>(70.0);
-  const [height, setHeight] = useState<number>(170);
-  const [goal, setGoal] = useState<string>("Lose Weight");
-  const [image, setImage] = useState<string | null>(null);
-  
-  const [isEstimating, setIsEstimating] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+type TabId = "animals" | "humans" | "buildings";
 
-  const bmi = weight / Math.pow(height / 100, 2);
-  
-  let bmiCategory = "Normal";
-  if (bmi < 18.5) bmiCategory = "Underweight";
-  else if (bmi >= 25 && bmi < 30) bmiCategory = "Overweight";
-  else if (bmi >= 30) bmiCategory = "Obese";
+interface TabConfig {
+  id: TabId;
+  icon: string;
+  label: string;
+  description: string;
+  headerTitle: string;
+  headerIcon: string;
+  badgeText: string;
+  accentVar: string;
+  glowVar: string;
+}
 
-  const handleImageUpload = async (base64: string) => {
-    setImage(base64);
-    setIsEstimating(true);
-    setError(null);
-    setAnalysisResult(null);
+const TABS: TabConfig[] = [
+  {
+    id: "animals",
+    icon: "🐾",
+    label: "Animals",
+    description: "Pet & cattle health",
+    headerTitle: "Animal Health Analyst",
+    headerIcon: "🐾",
+    badgeText: "AI Powered",
+    accentVar: "var(--accent-animals)",
+    glowVar: "var(--accent-animals-glow)",
+  },
+  {
+    id: "humans",
+    icon: "👤",
+    label: "Humans",
+    description: "Fitness & nutrition",
+    headerTitle: "Human Health Analyst",
+    headerIcon: "🥗",
+    badgeText: "AI Powered",
+    accentVar: "var(--accent-humans)",
+    glowVar: "var(--accent-humans-glow)",
+  },
+  {
+    id: "buildings",
+    icon: "🏗️",
+    label: "Buildings",
+    description: "Structural analysis",
+    headerTitle: "Building Analyst",
+    headerIcon: "🏛️",
+    badgeText: "Coming Soon",
+    accentVar: "var(--accent-buildings)",
+    glowVar: "var(--accent-buildings-glow)",
+  },
+];
 
-    try {
-      const res = await fetch("/api/humans/estimate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64 }),
-      });
-      const data = await res.json();
-      
-      if (data.error) {
-        setError(data.error);
-      } else {
-        if (data.age) setAge(data.age);
-        if (data.weight) setWeight(data.weight);
-        if (data.height) setHeight(data.height);
-      }
-    } catch (err: any) {
-      setError("Failed to estimate metrics. " + err.message);
-    } finally {
-      setIsEstimating(false);
-    }
-  };
+export default function DashboardPage() {
+  const [activeTab, setActiveTab] = useState<TabId>("animals");
 
-  const handleAnalyze = async () => {
-    if (!image) return;
-    
-    setIsAnalyzing(true);
-    setError(null);
-    setAnalysisResult(null);
+  const currentTab = TABS.find((t) => t.id === activeTab)!;
 
-    try {
-      const res = await fetch("/api/humans/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image,
-          profile: { age, weight, height, bmi, goal }
-        }),
-      });
-      const data = await res.json();
-      
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setAnalysisResult(data.plan);
-      }
-    } catch (err: any) {
-      setError("Failed to analyze. " + err.message);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
+  const handleTabChange = useCallback((tabId: TabId) => {
+    setActiveTab(tabId);
+    // Update CSS custom properties for accent theming
+    const root = document.documentElement;
+    const tab = TABS.find((t) => t.id === tabId)!;
+    root.style.setProperty("--accent", tab.accentVar);
+    root.style.setProperty("--accent-glow", tab.glowVar);
+  }, []);
 
   return (
-    <main className="container animate-fade-in">
-      <div className="text-center mb-8">
-        <h1>🥗 Humans: AI Health Analyst</h1>
-        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Ignite your fitness journey with AI-powered insights.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        {/* Left Column: Input Form */}
-        <GlassCard>
-          <h2>👤 Your Profile</h2>
-          
-          <div className="form-group">
-            <label className="form-label">Age</label>
-            <input 
-              type="number" 
-              className="form-input" 
-              value={age} 
-              onChange={e => setAge(Number(e.target.value))} 
-              min={10} max={100}
-            />
+    <div className="dashboard">
+      {/* ── Sidebar ── */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="sidebar-logo">🧠</div>
+            <div>
+              <div className="sidebar-title">AI Analyst</div>
+              <div className="sidebar-subtitle">Dashboard</div>
+            </div>
           </div>
-
-          <div className="form-group">
-            <label className="form-label">Weight (kg)</label>
-            <input 
-              type="number" 
-              className="form-input" 
-              value={weight} 
-              onChange={e => setWeight(Number(e.target.value))} 
-              step="0.1" min={30} max={200}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Height (cm)</label>
-            <input 
-              type="number" 
-              className="form-input" 
-              value={height} 
-              onChange={e => setHeight(Number(e.target.value))} 
-              min={100} max={250}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Your Goal</label>
-            <select className="form-select" value={goal} onChange={e => setGoal(e.target.value)}>
-              <option>Lose Weight</option>
-              <option>Gain Muscle</option>
-              <option>Maintenance</option>
-              <option>Get Toned</option>
-            </select>
-          </div>
-
-          <div className="flex gap-4 mt-8">
-            <MetricCard label="Your BMI" value={bmi.toFixed(1)} highlight={true} />
-            <MetricCard label="Category" value={bmiCategory} />
-          </div>
-        </GlassCard>
-
-        {/* Right Column: AI Analysis */}
-        <div className="flex" style={{ flexDirection: 'column', gap: '2rem' }}>
-          <GlassCard>
-            <h3>📸 Step 1: Upload Profile</h3>
-            <ImageUploader onImageUpload={handleImageUpload} label="Upload a full-body photo" />
-            {isEstimating && <p className="mt-8 text-center" style={{ color: 'var(--primary)', fontWeight: 600 }}>🔍 Estimating metrics...</p>}
-          </GlassCard>
-
-          <GlassCard>
-            <h3>🧠 Step 2: AI Analysis</h3>
-            {image ? (
-              <button 
-                className="btn-primary mt-8" 
-                onClick={handleAnalyze} 
-                disabled={isAnalyzing || isEstimating}
-              >
-                {isAnalyzing ? "🚀 Analyzing..." : "Generate My FitPlan"}
-              </button>
-            ) : (
-              <p className="mt-8 text-center" style={{ color: 'var(--text-muted)' }}>Upload photo to start.</p>
-            )}
-
-            {error && (
-              <div className="mt-8 p-4" style={{ background: '#fee2e2', color: '#b91c1c', borderRadius: '12px' }}>
-                {error}
-              </div>
-            )}
-
-            {analysisResult && (
-              <div className="mt-8 animate-fade-in">
-                <h4 style={{ color: 'var(--primary)' }}>✅ Analysis Complete!</h4>
-                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, background: 'rgba(255,255,255,0.5)', padding: '1.5rem', borderRadius: '12px', marginTop: '1rem' }}>
-                  {analysisResult}
-                </div>
-              </div>
-            )}
-          </GlassCard>
         </div>
-      </div>
-    </main>
+
+        <nav className="sidebar-nav">
+          <div className="sidebar-section-label">Modules</div>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab-btn${activeTab === tab.id ? " active" : ""}`}
+              onClick={() => handleTabChange(tab.id)}
+              id={`tab-${tab.id}`}
+            >
+              <div className="tab-icon">{tab.icon}</div>
+              <div className="tab-btn-text">
+                <span className="tab-btn-label">{tab.label}</span>
+                <span className="tab-btn-desc">{tab.description}</span>
+              </div>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-status">
+            <div className="status-dot" />
+            <span>AI engine online</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main Area ── */}
+      <main className="main-content">
+        {/* Header bar */}
+        <header className="content-header">
+          <div className="content-header-inner">
+            <h1 className="content-title">
+              <span className="content-title-icon">{currentTab.headerIcon}</span>
+              {currentTab.headerTitle}
+            </h1>
+            <div className="content-badge">
+              <span className="content-badge-dot" />
+              {currentTab.badgeText}
+            </div>
+          </div>
+        </header>
+
+        {/* Tab panel */}
+        <div className="tab-panel" key={activeTab}>
+          {activeTab === "animals" && <AnimalsPanel />}
+          {activeTab === "humans" && <HumansPanel />}
+          {activeTab === "buildings" && <BuildingsPanel />}
+        </div>
+      </main>
+    </div>
   );
 }
