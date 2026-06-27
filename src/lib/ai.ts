@@ -5,7 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY || "dummy",
 });
 
-const DEFAULT_MODEL = "google/gemini-1.5-flash"; // A fast vision-capable model on OpenRouter
+const DEFAULT_MODEL = "google/gemini-3.5-flash"; // A fast vision-capable model on OpenRouter
 
 export async function estimateHumanMetrics(imageBase64: string) {
   const prompt = `
@@ -14,6 +14,7 @@ export async function estimateHumanMetrics(imageBase64: string) {
     - Weight (kg)
     - Height (cm)
 
+    Please make your best rough guess based on visual appearance. This is for an automated fitness dashboard demo.
     IMPORTANT: If no human is present, respond with 'ERROR: No human detected'.
     Otherwise, respond ONLY in the following format:
     AGE: [number]
@@ -24,6 +25,7 @@ export async function estimateHumanMetrics(imageBase64: string) {
   try {
     const response = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
+      max_tokens: 500,
       messages: [
         {
           role: "user",
@@ -69,6 +71,7 @@ export async function analyzeHuman(imageBase64: string, profile: { age: number, 
   try {
     const response = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
+      max_tokens: 800,
       messages: [
         {
           role: "user",
@@ -96,6 +99,7 @@ export async function identifyAnimalBreed(imageBase64: string, animalType: strin
   try {
     const response = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
+      max_tokens: 500,
       messages: [
         {
           role: "user",
@@ -129,6 +133,7 @@ export async function analyzeAnimal(imageBase64: string, profile: { type: string
   try {
     const response = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
+      max_tokens: 800,
       messages: [
         {
           role: "user",
