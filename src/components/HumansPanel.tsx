@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { GlassCard } from "@/components/GlassCard";
 import { ImageUploader } from "@/components/ImageUploader";
 import { MetricCard } from "@/components/MetricCard";
+
+interface AnalysisHistory {
+  id: number;
+  date: string;
+  age: number;
+  weight: number;
+  goal: string;
+  result: string;
+}
 
 export function HumansPanel() {
   const [age, setAge] = useState<number>(25);
@@ -16,6 +26,30 @@ export function HumansPanel() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<AnalysisHistory[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("humansAnalysisHistory");
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch (e) {}
+    }
+  }, []);
+
+  const saveToHistory = (result: string, currentAge: number, currentWeight: number, currentGoal: string) => {
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      age: currentAge,
+      weight: currentWeight,
+      goal: currentGoal,
+      result
+    };
+    const newHistory = [newEntry, ...history].slice(0, 5); // Keep last 5 entries
+    setHistory(newHistory);
+    localStorage.setItem("humansAnalysisHistory", JSON.stringify(newHistory));
+  };
 
   const bmi = weight / Math.pow(height / 100, 2);
   
@@ -74,6 +108,7 @@ export function HumansPanel() {
         setError(data.error);
       } else {
         setAnalysisResult(data.plan);
+        saveToHistory(data.plan, age, weight, goal);
       }
     } catch (err: any) {
       setError("Failed to analyze. " + err.message);
@@ -209,10 +244,35 @@ export function HumansPanel() {
             {analysisResult && (
               <div className="mt-8 animate-fade-in">
                 <h4 style={{ color: 'var(--accent)' }}>✅ Analysis Complete!</h4>
-                <div className="result-box">{analysisResult}</div>
+                <div className="result-box markdown-content">
+                  <ReactMarkdown>{analysisResult}</ReactMarkdown>
+                </div>
               </div>
             )}
           </GlassCard>
+          
+          {history.length > 0 && (
+            <GlassCard>
+              <div className="section-label">History</div>
+              <h3>📜 Saved Analyses</h3>
+              <div className="history-list">
+                {history.map((item) => (
+                  <div key={item.id} className="history-item">
+                    <div className="history-header">
+                      <span className="history-date">{item.date}</span>
+                      <span className="history-goal">{item.goal}</span>
+                    </div>
+                    <div className="history-meta">
+                      Age: {item.age} • Weight: {item.weight}kg
+                    </div>
+                    <div className="result-box markdown-content history-result">
+                      <ReactMarkdown>{item.result}</ReactMarkdown>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
         </div>
       </div>
     </div>
